@@ -1,160 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  final themeManager = ThemeManager();
+  await themeManager._loadThemeMode(); // Load the theme mode before running the app
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => SignupModel(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => SignupModel()),
+        ChangeNotifierProvider.value(value: themeManager),
+      ],
       child: const MyApp(),
     ),
   );
 }
 
+
+
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Builder(
-        builder: (context) {
-          final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-
-          return Theme(
-            data: isDarkMode ? darkTheme : lightTheme,
-            child: const SignupPage(),
-          );
-        },
-      ),
+      themeMode: Provider.of<ThemeManager>(context).themeMode,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      home: const SignupPage(),
     );
   }
 }
-class SignupModel extends ChangeNotifier {
-  String email = '';
-  String phone = '';
-  String name = '';
-  String password = '';
+class ThemeManager extends ChangeNotifier {
+  late ThemeMode _themeMode;
 
-  bool isDarkMode = false;
-  bool obscureText = true;
+  ThemeManager() {
+    _loadThemeMode(); // Load saved theme mode from SharedPreferences
+  }
 
-  bool isLoading = false;
-  String? emailError;
-  String? phoneError;
-  String? nameError;
-  String? passwordError;
-  String? signupError;
+  ThemeMode get themeMode => _themeMode;
 
-  void toggleDarkMode() {
-    isDarkMode = !isDarkMode;
+  void toggleThemeMode() async {
+    _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    await _saveThemeMode(); // Save the current theme mode to SharedPreferences
     notifyListeners();
   }
 
-  void togglePasswordVisibility() {
-    obscureText = !obscureText;
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeString = prefs.getString('theme_mode');
+    _themeMode = themeModeString == 'dark' ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
   }
 
-  bool _validateEmail(String value) {
-    if (value.isEmpty) {
-      emailError = 'Email is required';
-      return false;
-    } else if (!value.contains('@')) {
-      emailError = 'Invalid email address';
-      return false;
-    }
-    emailError = null;
-    return true;
-  }
-
-  bool _validatePhone(String value) {
-    if (value.isEmpty) {
-      phoneError = 'Phone number is required';
-      return false;
-    }
-    phoneError = null;
-    return true;
-  }
-
-  bool _validateName(String value) {
-    if (value.isEmpty) {
-      nameError = 'Name is required';
-      return false;
-    }
-    nameError = null;
-    return true;
-  }
-
-  bool _validatePassword(String value) {
-    if (value.isEmpty) {
-      passwordError = 'Password is required';
-      return false;
-    }
-    passwordError = null;
-    return true;
-  }
-
-  Future<void> signUp(BuildContext context) async {
-    final scaffoldContext = ScaffoldMessenger.of(context);
-
-    try {
-      isLoading = true;
-      signupError = null;
-      notifyListeners();
-
-      // Validate all fields
-      final isEmailValid = _validateEmail(email);
-      final isPhoneValid = _validatePhone(phone);
-      final isNameValid = _validateName(name);
-      final isPasswordValid = _validatePassword(password);
-
-      if (!isEmailValid || !isPhoneValid || !isNameValid || !isPasswordValid) {
-        isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-
-
-      await _performSignUp();
-
-
-      scaffoldContext.showSnackBar(
-        const SnackBar(
-          content: Text('Signup successful!'),
-        ),
-      );
-
-      Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.of(scaffoldContext as BuildContext).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const SignupSuccessPage(),
-          ),
-        );
-      });
-    } catch (error) {
-      signupError = error.toString();
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> _performSignUp() async {
-    // Simulate a delay to mimic an API call.
-    await Future.delayed(const Duration(seconds: 3));
-
-
-    if (email.isEmpty || password.isEmpty) {
-      throw 'Email and password are required.';
-    }
+  Future<void> _saveThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeString = _themeMode == ThemeMode.dark ? 'dark' : 'light';
+    await prefs.setString('theme_mode', themeModeString);
   }
 }
-
-
 
 final commonButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: Colors.transparent,
@@ -227,22 +135,6 @@ const lightBackButtonGradient = LinearGradient(
   end: Alignment.centerRight,
 );
 
-final darkTheme = ThemeData(
-  brightness: Brightness.dark,
-  primaryColor: Colors.black,
-  colorScheme: const ColorScheme.dark(
-    background: Colors.black,
-  ),
-);
-
-final lightTheme = ThemeData(
-  brightness: Brightness.light,
-  primaryColor: const Color(0xFFF0E29E),
-  colorScheme: const ColorScheme.light(
-    background: Color(0xFFF0E29E),
-  ),
-);
-
 class SignupSuccessPage extends StatelessWidget {
   const SignupSuccessPage({Key? key}) : super(key: key);
 
@@ -279,6 +171,8 @@ class SignupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final signupModel = Provider.of<SignupModel>(context);
+    final themeManager = Provider.of<ThemeManager>(context);
+
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -313,7 +207,9 @@ class SignupPage extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: Icon(
-                      signupModel.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                      themeManager.themeMode == ThemeMode.dark
+                          ? Icons.light_mode
+                          : Icons.dark_mode,
                       color: Colors.black,
                     ),
                     onPressed: signupModel.toggleDarkMode,
@@ -488,7 +384,7 @@ class SignupPage extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () {
-
+                                // Implement sign-in logic here
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: signupModel.isDarkMode
@@ -591,3 +487,142 @@ class SignupPage extends StatelessWidget {
     );
   }
 }
+
+class SignupModel extends ChangeNotifier {
+  String email = '';
+  String phone = '';
+  String name = '';
+  String password = '';
+
+  bool isDarkMode = false;
+  bool obscureText = true;
+
+  bool isLoading = false;
+  String? emailError;
+  String? phoneError;
+  String? nameError;
+  String? passwordError;
+  String? signupError;
+  void toggleDarkMode() async {
+    isDarkMode = !isDarkMode;
+    notifyListeners();
+
+    // Persist the theme mode in SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeString = isDarkMode ? 'dark' : 'light';
+    await prefs.setString('theme_mode', themeModeString);
+  }
+
+  void togglePasswordVisibility() {
+    obscureText = !obscureText;
+    notifyListeners();
+  }
+
+  bool _validateEmail(String value) {
+    if (value.isEmpty) {
+      emailError = 'Email is required';
+      return false;
+    } else if (!value.contains('@')) {
+      emailError = 'Invalid email address';
+      return false;
+    }
+    emailError = null;
+    return true;
+  }
+
+  bool _validatePhone(String value) {
+    if (value.isEmpty) {
+      phoneError = 'Phone number is required';
+      return false;
+    }
+    phoneError = null;
+    return true;
+  }
+
+  bool _validateName(String value) {
+    if (value.isEmpty) {
+      nameError = 'Name is required';
+      return false;
+    }
+    nameError = null;
+    return true;
+  }
+
+  bool _validatePassword(String value) {
+    if (value.isEmpty) {
+      passwordError = 'Password is required';
+      return false;
+    }
+    passwordError = null;
+    return true;
+  }
+
+  Future<void> signUp(BuildContext context) async {
+    final scaffoldContext = ScaffoldMessenger.of(context);
+
+    try {
+      isLoading = true;
+      signupError = null;
+      notifyListeners();
+
+      // Validate all fields
+      final isEmailValid = _validateEmail(email);
+      final isPhoneValid = _validatePhone(phone);
+      final isNameValid = _validateName(name);
+      final isPasswordValid = _validatePassword(password);
+
+      if (!isEmailValid || !isPhoneValid || !isNameValid || !isPasswordValid) {
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      await _performSignUp();
+
+      scaffoldContext.showSnackBar(
+        const SnackBar(
+          content: Text('Signup successful!'),
+        ),
+      );
+
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.of(scaffoldContext as BuildContext).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const SignupSuccessPage(),
+          ),
+        );
+      });
+    } catch (error) {
+      signupError = error.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _performSignUp() async {
+    // Simulate a delay to mimic an API call.
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (email.isEmpty || password.isEmpty) {
+      throw 'Email and password are required.';
+    }
+  }
+}
+
+final darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  primaryColor: Colors.black,
+  colorScheme: const ColorScheme.dark(
+    background: Colors.black,
+  ),
+);
+
+final lightTheme = ThemeData(
+  brightness: Brightness.light,
+  primaryColor: const Color(0xFFF0E29E),
+  colorScheme: const ColorScheme.light(
+    background: Color(0xFFF0E29E),
+  ),
+);
+
