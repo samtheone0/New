@@ -117,19 +117,17 @@ class SignupModel extends ChangeNotifier {
         return;
       }
 
-      // Perform your signup logic here, e.g., make API requests
-      // If successful, you can navigate to the success page
+
 
       await _performSignUp();
 
-      // Use the stored scaffoldContext to show messages
+
       scaffoldContext.showSnackBar(
         const SnackBar(
           content: Text('Signup successful!'),
         ),
       );
 
-      // Navigate to the signup success page without using the context
       Future.delayed(const Duration(milliseconds: 500), () {
         Navigator.of(scaffoldContext as BuildContext).pushReplacement(
           MaterialPageRoute(
@@ -149,23 +147,15 @@ class SignupModel extends ChangeNotifier {
     // Simulate a delay to mimic an API call.
     await Future.delayed(const Duration(seconds: 3));
 
-    // You should use these values for your signup logic here, e.g., making an API request.
-    // Replace the following lines with actual signup logic
 
     if (email.isEmpty || password.isEmpty) {
       throw 'Email and password are required.';
     }
-
-    // Simulate an error for testing
-    // throw 'Signup failed: Email already exists';
-
-    // Successful signup logic here
   }
 }
 
-// ... The rest of your code, including constants and SignupSuccessPage
 
-// Constants
+
 final commonButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: Colors.transparent,
   elevation: 0,
@@ -469,7 +459,7 @@ class SignupPage extends StatelessWidget {
                             children: [
                               Flexible(
                                 child: Image.asset(
-                                  'asset/google.png', // Corrected the asset path
+                                  'asset/google.png',
                                   width: 30,
                                   height: 20,
                                 ),
@@ -498,7 +488,7 @@ class SignupPage extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () {
-                                // Implement sign-in navigation logic here
+
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: signupModel.isDarkMode
