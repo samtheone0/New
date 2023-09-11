@@ -1,39 +1,41 @@
+// light_mode.dart
+
 import 'package:flutter/material.dart';
 
-final ThemeData lightTheme = ThemeData(
-  brightness: Brightness.light,
-  primaryColor: const Color(0xFFF0E29E),
-  colorScheme: const ColorScheme.light(
-    background: Color(0xFF231EAB),
-  ),
-);
-
-final LinearGradient lightAppBarGradient = LinearGradient(
+const lightAppBarGradient = LinearGradient(
   colors: [Color(0xFFF0E29E), Color(0xFFDFD9C6)],
   begin: Alignment.topLeft,
   end: Alignment.topLeft,
 );
 
-final LinearGradient lightBodyGradient = LinearGradient(
+const lightBodyGradient = LinearGradient(
   colors: [Color(0xFFF0E29E), Color(0xFFDFD9C6)],
   begin: Alignment.topLeft,
   end: Alignment.topLeft,
 );
 
-final LinearGradient lightInputFieldGradient = LinearGradient(
+const lightInputFieldGradient = LinearGradient(
   colors: [Colors.white, Colors.grey],
   begin: Alignment.bottomRight,
   end: Alignment.bottomRight,
 );
 
-final LinearGradient lightButtonGradient = LinearGradient(
+const lightButtonGradient = LinearGradient(
   colors: [Color(0xFFF0E29E), Color(0xFFDFD9C6)],
   begin: Alignment.bottomRight,
   end: Alignment.bottomRight,
 );
 
-final LinearGradient lightBackButtonGradient = LinearGradient(
+const lightBackButtonGradient = LinearGradient(
   colors: [Color(0xFFF0E29E), Color(0xFFDFD9C6)],
   begin: Alignment.centerLeft,
   end: Alignment.centerRight,
+);
+
+final lightTheme = ThemeData(
+  brightness: Brightness.light,
+  primaryColor: const Color(0xFFF0E29E),
+  colorScheme: const ColorScheme.light(
+    background: Color(0xFFF0E29E),
+  ),
 );
