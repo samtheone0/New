@@ -34,3 +34,16 @@ class ThemeProvider extends ChangeNotifier {
     prefs.setBool(_themePreferenceKey, isDarkTheme);
   }
 }
+Color darkTextColor = Colors.black;
+Color lightTextColor = Colors.black;
+
+// Custom button style
+ButtonStyle customButtonStyle(BuildContext context, bool isDarkTheme) {
+  Color buttonColor = isDarkTheme ? Colors.black45 : Colors.white54;
+  return ElevatedButton.styleFrom(
+    foregroundColor: Theme.of(context).primaryColor,
+    backgroundColor: buttonColor,
+    shape: const CircleBorder(),
+    padding: const EdgeInsets.all(16),
+  );
+}

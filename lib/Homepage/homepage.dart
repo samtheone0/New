@@ -1,15 +1,15 @@
 import 'dart:convert';
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-
-import '../Homepage/meme.dart';
 import '../Profile/profile_screen.dart';
 import '../Signup_page/dark_theme.dart';
 import '../Signup_page/light_theme.dart';
 import '../Signup_page/theme_manager.dart';
+import 'fetch.dart';
+import 'product_detail.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -27,82 +27,56 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  List<Meme> memes = [];
-  var index = 0;
-  late AnimationController _titleAnimController;
-  late AnimationController _memeAnimController;
+class _HomePageState extends State<HomePage> {
+  List<Product> products = [];
+  late ThemeProvider themeProvider; // Declare themeProvider here
 
   @override
   void initState() {
     super.initState();
-    _titleAnimController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _memeAnimController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    fetchMemes().then((data) => {
+    fetchProducts().then((data) {
       setState(() {
-        memes = data;
-      })
+        products = data;
+      });
     });
   }
 
-  @override
-  void dispose() {
-    _titleAnimController.dispose();
-    _memeAnimController.dispose();
-    super.dispose();
-  }
+  Future<List<Product>> fetchProducts() async {
+    var url = Uri.parse("https://fakestoreapi.com/products");
+    var response = await http.get(url);
 
-  Future<List<Meme>> fetchMemes() async {
-    var url = await http.get(Uri.parse("https://api.imgflip.com/get_memes"));
-    if (url.statusCode == 200) {
-      final fetchedItems = json.decode(url.body);
-      List<Meme> memes = [];
-      for (var memeItem in fetchedItems['data']['memes']) {
-        Meme item = Meme.fromJson(memeItem);
-        memes.add(item);
-      }
-      return memes;
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      List<Product> productList = data.map((item) {
+        return Product(
+          id: item['id'],
+          title: item['title'],
+          description: item['description'],
+          price: item['price'].toDouble(),
+          image: item['image'],
+        );
+      }).toList();
+      return productList;
     } else {
-      throw Exception('Failed to load items');
+      throw Exception('Failed to load products');
     }
   }
+
+  // Rest of your code...
 
   @override
   Widget build(BuildContext context) {
-    if (memes.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    Color darkTextColor = Colors.black;
-    Color lightTextColor = Colors.black;
-
-    // Custom button style
-    ButtonStyle customButtonStyle(BuildContext context, bool isDarkTheme) {
-      Color buttonColor = isDarkTheme ? Colors.black45 : Colors.white54;
-      return ElevatedButton.styleFrom(
-        foregroundColor: Theme.of(context).primaryColor,
-        backgroundColor: buttonColor,
-        shape: const CircleBorder(),
-        padding: const EdgeInsets.all(16),
-      );
-    }
+    themeProvider =
+        Provider.of<ThemeProvider>(context); // Initialize themeProvider here
 
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70.0),
         child: Container(
           decoration: BoxDecoration(
-            gradient:
-            themeProvider.isDarkTheme ? darkAppBarGradient : lightAppBarGradient,
+            gradient: themeProvider.isDarkTheme
+                ? darkAppBarGradient
+                : lightAppBarGradient,
           ),
           child: AppBar(
             automaticallyImplyLeading: false,
@@ -128,7 +102,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       onPressed: () {
                         // Implement back button logic here
                       },
-                      style: customButtonStyle(context, themeProvider.isDarkTheme),
+                      style:
+                      customButtonStyle(context, themeProvider.isDarkTheme),
                     ),
                   ),
                   const Spacer(),
@@ -143,7 +118,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   IconButton(
                     icon: Icon(
-                      Icons.person, // Use your profile icon here
+                      Icons.person,
                       color: themeProvider.isDarkTheme
                           ? darkTextColor
                           : lightTextColor,
@@ -152,14 +127,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProfileScreen(
-                            username: widget.username,
-                            email: widget.email,
-                            appVersion: widget.appVersion,
-                            navigateToLoginScreen: (BuildContext context) {
-                              // Define the logic to navigate to the login screen here
-                            },
-                          ),
+                          builder: (context) =>
+                              ProfileScreen(
+                                username: widget.username,
+                                email: widget.email,
+                                appVersion: widget.appVersion,
+                                navigateToLoginScreen: (BuildContext context) {
+                                  // Define the logic to navigate to the login screen here
+                                },
+                              ),
                         ),
                       );
                     },
@@ -184,101 +160,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
       resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient:
-              themeProvider.isDarkTheme ? darkBodyGradient : lightBodyGradient,
-            ),
-          ),
-          Center(
-            child: AnimatedBuilder(
-              animation: _memeAnimController,
-              builder: (context, child) {
-                final screenWidth = MediaQuery.of(context).size.width;
-                final startOffset = index > index ? screenWidth : -screenWidth;
-                const endOffset = 0;
-
-                final offset =
-                    lerpDouble(startOffset, endOffset, _memeAnimController.value) ?? 0.0;
-
-                return Transform.translate(
-                  offset: Offset(offset, 0),
-                  child: Center(
-                    child: child,
-                  ),
-                );
-              },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    memes[index].name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Image.network(
-                    memes[index].url,
-                    fit: BoxFit.contain,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Stack(
-            children: [
-              Align(
-                alignment: Alignment.bottomLeft,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (index == 0) {
-                        // ...
-                      } else {
-                        setState(() {
-                          index--;
-                          _memeAnimController.reset();
-                          _memeAnimController.forward();
-                        });
-                      }
-                    },
-                    style: customButtonStyle(context, themeProvider.isDarkTheme),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_sharp,
-                      color: themeProvider.isDarkTheme ? Colors.grey : Colors.grey,
-                    ),
-                  ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return ListTile(
+            title: Text(product.title),
+            subtitle: Text("\$${product.price.toStringAsFixed(2)}"),
+            leading: Image.network(product.image),
+            onTap: () {
+              // Navigate to product details screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ProductDetailsScreen(product: product, username: '', email: '', appVersion: '',),
                 ),
-              ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (index < memes.length - 1) {
-                        setState(() {
-                          index++;
-                          _memeAnimController.reset();
-                          _memeAnimController.forward();
-                        });
-                      } else {
-                        // You've reached the end of the list.
-                        // Handle it as per your requirements.
-                      }
-                    },
-                    style: customButtonStyle(context, themeProvider.isDarkTheme),
-                    child: Icon(
-                      Icons.arrow_forward_ios_sharp,
-                      color: themeProvider.isDarkTheme ? Colors.grey : Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }

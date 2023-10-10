@@ -41,11 +41,11 @@ class MyApp extends StatelessWidget {
             initialRoute = HomePage(username: username, email: email, appVersion: '');
           } else {
             // User data doesn't exist, navigate to SignupPage
-            initialRoute = SignupPage();
+            initialRoute = const SignupPage();
           }
         } else {
           // Show a loading indicator or some other widget while fetching data
-          initialRoute = CircularProgressIndicator();
+          initialRoute = const CircularProgressIndicator();
         }
 
         return MaterialApp(
